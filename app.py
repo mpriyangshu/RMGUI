@@ -1,12 +1,7 @@
 """
-Streamlit Web App: Relative Permeability & Fraction Flow Calculator
-Author: Adapted for web deployment from GUI version
+Relative Permeability & Fraction Flow Calculator
+Author: Priyangshu Malakar
 Repo: https://github.com/mpriyangshu/RMGUI
-
-How to run locally:
-  pip install -r requirements.txt
-  streamlit run app.py
-
 This app computes and plots relative permeability and fractional flow curves during water flooding.
 It supports Corey, Pirson, and Wyllie-Gardner models, with options to export results to .xlsx and .pdf.
 """
