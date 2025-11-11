@@ -14,46 +14,7 @@ import json
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-# Set page config with white background
-st.set_page_config(
-    page_title="Relative Permeability & Fraction Flow", 
-    layout="wide",
-    page_icon="📊"
-)
-
-# Apply custom CSS for white background and premium styling
-st.markdown("""
-<style>
-    .main {
-        background-color: #000000;
-    }
-    .stApp {
-        background-color: #000000;
-    }
-    .sidebar .sidebar-content {
-        background-color: #f8f9fa;
-    }
-    .css-1d391kg, .css-12oz5g7 {
-        background-color: #ffffff;
-    }
-    .block-container {
-        padding-top: 2rem;
-        background-color: #ffffff;
-    }
-    .header-style {
-        color: #1f77b4;
-        border-bottom: 2px solid #1f77b4;
-        padding-bottom: 10px;
-    }
-    .card {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 4px solid #1f77b4;
-        margin-bottom: 20px;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Relative Permeability & Fraction Flow", layout="wide")
 
 # ------------------ Relative permeability models ------------------
 
@@ -99,7 +60,7 @@ def fraction_flow(krw, kro, mu_w, mu_o):
 
 # ------------------ Sidebar Inputs ------------------
 
-st.sidebar.markdown('<div class="header-style">🔧 User Inputs</div>', unsafe_allow_html=True)
+st.sidebar.title("🔧 User Inputs")
 
 st.sidebar.markdown("### Fluid Properties")
 mu_w = st.sidebar.number_input("**Water viscosity (cP)**", 0.1, 1000.0, 0.5, help="Viscosity of water phase")
@@ -129,22 +90,20 @@ compute = st.sidebar.button("🚀 Compute & Plot", type="primary", use_container
 
 # ------------------ Main Layout ------------------
 
-st.markdown('<div class="header-style">📊 Relative Permeability & Fraction Flow Calculator</div>', unsafe_allow_html=True)
-
+st.title("📊 Relative Permeability & Fraction Flow Calculator")
 st.markdown("""
-<div class="card">
-    <h3>📖 Introduction</h3>
-    <p>This tool calculates and plots relative permeability (krw, kro) and fractional flow (fw) as functions of water saturation Sw during water flooding operations.</p>
-    <p><strong>Group Members:</strong> Priyangshu Malakar, Aishwarya</p>
-    <p><strong>Features:</strong></p>
-    <ul>
-        <li>Multiple relative permeability models (Corey, Pirson, Wyllie-Gardner)</li>
-        <li>Real-time calculations and visualization</li>
-        <li>Export results to Excel and PDF formats</li>
-        <li>Save and load project configurations</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
+**Introduction**
+
+This tool calculates and plots relative permeability (krw, kro) and fractional flow (fw) as functions of water saturation Sw during water flooding operations.
+
+**Group Members:** Priyangshu Malakar, Aishwarya
+
+**Features:**
+- Multiple relative permeability models (Corey, Pirson, Wyllie-Gardner)
+- Real-time calculations and visualization
+- Export results to Excel and PDF formats
+- Save and load project configurations
+""")
 
 if compute:
     # Add progress indicator
@@ -166,7 +125,7 @@ if compute:
         })
 
     # Display input summary
-    st.markdown("### 📋 Input Summary")
+    st.subheader("📋 Input Summary")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Water Viscosity", f"{mu_w} cP")
@@ -182,12 +141,11 @@ if compute:
         if model == 'Corey':
             st.metric("Exponents", f"nw={nw}, no={no}")
 
-    st.markdown("### 📈 Numerical Results")
+    st.subheader("📈 Numerical Results")
     st.dataframe(df.round(5), use_container_width=True)
 
-    # Create plots with white background
-    fig1, ax1 = plt.subplots(figsize=(10, 6), facecolor='white')
-    ax1.set_facecolor('white')
+    # Create plots
+    fig1, ax1 = plt.subplots(figsize=(10, 6))
     ax1.plot(Sw, krw, 'b-', linewidth=2, label='krw (Water)')
     ax1.plot(Sw, kro, 'r-', linewidth=2, label='kro (Oil)')
     ax1.set_xlabel('Water Saturation (Sw)', fontsize=12)
@@ -199,8 +157,7 @@ if compute:
     st.pyplot(fig1)
 
     # Plot fw
-    fig2, ax2 = plt.subplots(figsize=(10, 6), facecolor='white')
-    ax2.set_facecolor('white')
+    fig2, ax2 = plt.subplots(figsize=(10, 6))
     ax2.plot(Sw, fw, 'g-', linewidth=2, label='fw')
     ax2.set_xlabel('Water Saturation (Sw)', fontsize=12)
     ax2.set_ylabel('Fractional Flow (fw)', fontsize=12)
@@ -212,7 +169,7 @@ if compute:
     st.pyplot(fig2)
 
     # Export section
-    st.markdown("### 📤 Export Results")
+    st.subheader("📤 Export Results")
     
     col1, col2, col3 = st.columns(3)
     
@@ -242,9 +199,9 @@ if compute:
         pdf_buffer = io.BytesIO()
         with PdfPages(pdf_buffer) as pdf:
             fig1.tight_layout()
-            pdf.savefig(fig1, bbox_inches='tight', facecolor='white')
+            pdf.savefig(fig1, bbox_inches='tight')
             fig2.tight_layout()
-            pdf.savefig(fig2, bbox_inches='tight', facecolor='white')
+            pdf.savefig(fig2, bbox_inches='tight')
         
         st.download_button(
             label="📥 Download PDF (.pdf)",
