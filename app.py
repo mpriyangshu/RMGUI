@@ -30,44 +30,43 @@ def effective_saturation_oil(Sw, Swc, Sor):
     return np.clip(So_star, 0.0, 1.0)
 
 def corey_kr(Sw, Swc, Sor, krw0, kro0, nw=4.0, no=4.0):
-    """Corey's Method (1954)"""
-    So_star = effective_saturation_oil(Sw, Swc)
+    So_star = effective_saturation_oil(Sw, Swc, Sor)
     Sw_star = effective_saturation_water(Sw, Swc)
-    
-    # Corey's original formulation uses exponents of 4
+
     kro = kro0 * (So_star ** no)
     krw = krw0 * (Sw_star ** nw)
-    
+
     return krw, kro
 
 def wyllie_gardner_kr(Sw, Swc, Sor, krw0, kro0):
-    """Wyllie and Gardner Correlation (1958)"""
-    So_star = effective_saturation_oil(Sw, Swc)
+    So_star = effective_saturation_oil(Sw, Swc, Sor)
     Sw_star = effective_saturation_water(Sw, Swc)
-    
-    # Note: The image shows k_ro = (1 - S_w*)^2 * (1 - S_w*)^2 = (1 - S_w*)^4
-    # And k_rw = (S_o*)^4
+
     kro = kro0 * ((1.0 - Sw_star) ** 4)
     krw = krw0 * (So_star ** 4)
-    
+
     return krw, kro
 
+    
+  
+
 def pirson_kr(Sw, Swc, Sor, krw0, kro0):
-    """Pirson's Correlation (1958)"""
-    So_star = effective_saturation_oil(Sw, Swc)
+    So_star = effective_saturation_oil(Sw, Swc, Sor)
     Sw_star = effective_saturation_water(Sw, Swc)
     
-    # Pirson's correlation
     krw = krw0 * np.sqrt(Sw_star) * (Sw_star ** 3)
-    
-    # For kro: [1 - ((S_w - S_wc)/(1 - S_wc - S_or))]^2
+
     denom = 1.0 - Swc - Sor
     denom = np.where(denom == 0, 1e-12, denom)
+
     kro_term = 1.0 - ((Sw - Swc) / denom)
     kro_term = np.clip(kro_term, 0.0, 1.0)
+
     kro = kro0 * (kro_term ** 2)
-    
+
     return krw, kro
+
+    
 
 MODEL_FUNCS = {
     'Corey': corey_kr,
