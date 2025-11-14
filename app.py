@@ -42,8 +42,8 @@ def wyllie_gardner_kr(Sw, Swc, Sor, krw0, kro0):
     So_star = effective_saturation_oil(Sw, Swc, Sor)
     Sw_star = effective_saturation_water(Sw, Swc)
 
-    kro = kro0 * ((1.0 - Sw_star) ** 4)
-    krw = krw0 * (So_star ** 4)
+    kro = kro0 * ((1.0 - Sw_star) ** 3)
+    krw = krw0 * (So_star ** 3)
 
     return krw, kro
 
