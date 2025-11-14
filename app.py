@@ -18,16 +18,16 @@ st.set_page_config(page_title="Relative Permeability & Fraction Flow", layout="w
 
 # ------------------ Relative permeability models ------------------
 
-def effective_saturation_oil(Sw, Swc):
-    """Effective oil saturation: S_o* = S_o / (1 - S_wc)"""
-    So = 1.0 - Sw  # Oil saturation
-    So_star = So / (1.0 - Swc)
-    return np.clip(So_star, 0.0, 1.0)
-
 def effective_saturation_water(Sw, Swc):
     """Effective water saturation: S_w* = (S_w - S_wc) / (1 - S_wc)"""
     Sw_star = (Sw - Swc) / (1.0 - Swc)
     return np.clip(Sw_star, 0.0, 1.0)
+
+def effective_saturation_oil(Sw, Swc, Sor):
+    """Effective oil saturation: S_o* = (S_o - S_or) / (1 - S_wc - S_or)"""
+    So = 1.0 - Sw
+    So_star = (So - Sor) / (1.0 - Swc - Sor)
+    return np.clip(So_star, 0.0, 1.0)
 
 def corey_kr(Sw, Swc, Sor, krw0, kro0, nw=4.0, no=4.0):
     """Corey's Method (1954)"""
