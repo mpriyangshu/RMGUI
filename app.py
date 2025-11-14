@@ -18,29 +18,55 @@ st.set_page_config(page_title="Relative Permeability & Fraction Flow", layout="w
 
 # ------------------ Relative permeability models ------------------
 
-def effective_saturation(Sw, Swc, Sor):
-    denom = 1.0 - Swc - Sor
-    denom = np.where(denom == 0, 1e-12, denom)
-    Sstar = (Sw - Swc) / denom
-    Sstar = np.clip(Sstar, 0.0, 1.0)
-    return Sstar
+def effective_saturation_oil(Sw, Swc):
+    """Effective oil saturation: S_o* = S_o / (1 - S_wc)"""
+    So = 1.0 - Sw  # Oil saturation
+    So_star = So / (1.0 - Swc)
+    return np.clip(So_star, 0.0, 1.0)
 
-def corey_kr(Sw, Swc, Sor, krw0, kro0, nw=3.0, no=2.0):
-    Sstar = effective_saturation(Sw, Swc, Sor)
-    krw = krw0 * (Sstar ** nw)
-    kro = kro0 * ((1.0 - Sstar) ** no)
-    return krw, kro
+def effective_saturation_water(Sw, Swc):
+    """Effective water saturation: S_w* = (S_w - S_wc) / (1 - S_wc)"""
+    Sw_star = (Sw - Swc) / (1.0 - Swc)
+    return np.clip(Sw_star, 0.0, 1.0)
 
-def pirson_kr(Sw, Swc, Sor, krw0, kro0):
-    Sstar = effective_saturation(Sw, Swc, Sor)
-    krw = krw0 * (Sstar ** 2)
-    kro = kro0 * ((1.0 - Sstar) ** 2)
+def corey_kr(Sw, Swc, Sor, krw0, kro0, nw=4.0, no=4.0):
+    """Corey's Method (1954)"""
+    So_star = effective_saturation_oil(Sw, Swc)
+    Sw_star = effective_saturation_water(Sw, Swc)
+    
+    # Corey's original formulation uses exponents of 4
+    kro = kro0 * (So_star ** no)
+    krw = krw0 * (Sw_star ** nw)
+    
     return krw, kro
 
 def wyllie_gardner_kr(Sw, Swc, Sor, krw0, kro0):
-    Sstar = effective_saturation(Sw, Swc, Sor)
-    krw = krw0 * (Sstar ** 1.5)
-    kro = kro0 * ((1.0 - Sstar) ** 1.5)
+    """Wyllie and Gardner Correlation (1958)"""
+    So_star = effective_saturation_oil(Sw, Swc)
+    Sw_star = effective_saturation_water(Sw, Swc)
+    
+    # Note: The image shows k_ro = (1 - S_w*)^2 * (1 - S_w*)^2 = (1 - S_w*)^4
+    # And k_rw = (S_o*)^4
+    kro = kro0 * ((1.0 - Sw_star) ** 4)
+    krw = krw0 * (So_star ** 4)
+    
+    return krw, kro
+
+def pirson_kr(Sw, Swc, Sor, krw0, kro0):
+    """Pirson's Correlation (1958)"""
+    So_star = effective_saturation_oil(Sw, Swc)
+    Sw_star = effective_saturation_water(Sw, Swc)
+    
+    # Pirson's correlation
+    krw = krw0 * np.sqrt(Sw_star) * (Sw_star ** 3)
+    
+    # For kro: [1 - ((S_w - S_wc)/(1 - S_wc - S_or))]^2
+    denom = 1.0 - Swc - Sor
+    denom = np.where(denom == 0, 1e-12, denom)
+    kro_term = 1.0 - ((Sw - Swc) / denom)
+    kro_term = np.clip(kro_term, 0.0, 1.0)
+    kro = kro0 * (kro_term ** 2)
+    
     return krw, kro
 
 MODEL_FUNCS = {
@@ -79,11 +105,11 @@ model = st.sidebar.selectbox("**Select relative permeability model**", list(MODE
 
 if model == 'Corey':
     st.sidebar.markdown("### Corey Exponents")
-    nw = st.sidebar.number_input("**Corey exponent nw**", 0.1, 10.0, 3.0, 0.1, help="Exponent for water relative permeability curve")
-    no = st.sidebar.number_input("**Corey exponent no**", 0.1, 10.0, 2.0, 0.1, help="Exponent for oil relative permeability curve")
+    nw = st.sidebar.number_input("**Corey exponent nw**", 0.1, 10.0, 4.0, 0.1, help="Exponent for water relative permeability curve")
+    no = st.sidebar.number_input("**Corey exponent no**", 0.1, 10.0, 4.0, 0.1, help="Exponent for oil relative permeability curve")
 else:
-    nw = 3.0
-    no = 2.0
+    nw = 4.0
+    no = 4.0
 
 st.sidebar.markdown("---")
 compute = st.sidebar.button("🚀 Compute & Plot", type="primary", use_container_width=True)
@@ -108,7 +134,7 @@ This tool calculates and plots relative permeability (krw, kro) and fractional f
 if compute:
     # Add progress indicator
     with st.spinner('Calculating relative permeability and fractional flow...'):
-        Sw = np.linspace(0, 1, 201)
+        Sw = np.linspace(Swc, 1-Sor, 201)  # Only consider physically meaningful saturations
         func = MODEL_FUNCS.get(model)
         if model == 'Corey':
             krw, kro = func(Sw, Swc, Sor, krw0, kro0, nw, no)
@@ -150,10 +176,11 @@ if compute:
     ax1.plot(Sw, kro, 'r-', linewidth=2, label='kro (Oil)')
     ax1.set_xlabel('Water Saturation (Sw)', fontsize=12)
     ax1.set_ylabel('Relative Permeability', fontsize=12)
-    ax1.set_title('Relative Permeability vs Water Saturation', fontsize=14, fontweight='bold')
+    ax1.set_title(f'Relative Permeability vs Water Saturation ({model} Model)', fontsize=14, fontweight='bold')
     ax1.grid(True, alpha=0.3)
     ax1.legend(fontsize=12)
-    ax1.set_xlim(0, 1)
+    ax1.set_xlim(Swc, 1-Sor)
+    ax1.set_ylim(0, 1)
     st.pyplot(fig1)
 
     # Plot fw
@@ -161,10 +188,10 @@ if compute:
     ax2.plot(Sw, fw, 'g-', linewidth=2, label='fw')
     ax2.set_xlabel('Water Saturation (Sw)', fontsize=12)
     ax2.set_ylabel('Fractional Flow (fw)', fontsize=12)
-    ax2.set_title('Fractional Flow vs Water Saturation', fontsize=14, fontweight='bold')
+    ax2.set_title(f'Fractional Flow vs Water Saturation ({model} Model)', fontsize=14, fontweight='bold')
     ax2.grid(True, alpha=0.3)
     ax2.legend(fontsize=12)
-    ax2.set_xlim(0, 1)
+    ax2.set_xlim(Swc, 1-Sor)
     ax2.set_ylim(0, 1)
     st.pyplot(fig2)
 
